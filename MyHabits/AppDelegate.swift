@@ -10,25 +10,35 @@ import UIKit
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
-
+    var window: UIWindow?
+    let tabBar = UITabBarController()
+    
+    let habitsVC = HabitsViewController()
+    let infoVC = InfoViewController()
+    
+    var habitsNC = UINavigationController()
+    var infoNC = UINavigationController()
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        
+        habitsNC = UINavigationController(rootViewController: habitsVC)
+        habitsNC.navigationBar.prefersLargeTitles = true
+        
+        infoNC = UINavigationController(rootViewController: infoVC)
+        
+        habitsNC.tabBarItem = .init(title: "Привычки", image: UIImage(named: "habits_tab_icon"), tag: 0)
+        infoNC.tabBarItem = .init(title: "Информация", image: UIImage(systemName: "info.circle.fill"), tag: 1)
+        UITabBar.appearance().tintColor = UIColor(red: 161/255.0, green: 22/255.0, blue: 204/255.0, alpha: 1.0)
+        tabBar.viewControllers = [habitsNC, infoNC]
+        
+        
+        
+        self.window = UIWindow(frame: UIScreen.main.bounds)
+        window?.rootViewController = tabBar
+        window?.makeKeyAndVisible()
+        
         return true
-    }
-
-    // MARK: UISceneSession Lifecycle
-
-    func application(_ application: UIApplication, configurationForConnecting connectingSceneSession: UISceneSession, options: UIScene.ConnectionOptions) -> UISceneConfiguration {
-        // Called when a new scene session is being created.
-        // Use this method to select a configuration to create the new scene with.
-        return UISceneConfiguration(name: "Default Configuration", sessionRole: connectingSceneSession.role)
-    }
-
-    func application(_ application: UIApplication, didDiscardSceneSessions sceneSessions: Set<UISceneSession>) {
-        // Called when the user discards a scene session.
-        // If any sessions were discarded while the application was not running, this will be called shortly after application:didFinishLaunchingWithOptions.
-        // Use this method to release any resources that were specific to the discarded scenes, as they will not return.
+        
     }
 
 
