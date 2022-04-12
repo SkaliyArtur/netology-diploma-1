@@ -35,8 +35,10 @@ class HabitsViewController: UIViewController, UINavigationBarDelegate {
         setupNavBar()
     }
     @objc func tap() {
-//        let infoVC = InfoViewController()
-//        self.present(infoVC, animated: true, completion: nil)
-        print("Hello")
+        let habitCreateVC = HabitViewController()
+        let navigationController = UINavigationController(rootViewController: habitCreateVC)
+        navigationController.modalPresentationStyle = .fullScreen
+        present(navigationController, animated: true)
+        
     }
 }
