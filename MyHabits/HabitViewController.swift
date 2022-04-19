@@ -7,8 +7,30 @@
 
 import UIKit
 
+protocol CloseDelegate {
+    func closeView()
+}
+
+protocol RefreshDelegate {
+    func refreshView()
+}
+
 class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate {
 
+    var habit: Habit? {
+        didSet {
+            if habit != nil {
+                nameTextField.text = habit?.name
+                pickerButton.backgroundColor = habit?.color
+                timePickerLabel.text = habit?.dateString
+                timePicker.date = habit!.date
+            }
+        }
+    }
+
+    var closeView: CloseDelegate?
+    var refreshView: RefreshDelegate?
+    
     let nameLabel: UILabel = {
        let nameLabel = UILabel()
         nameLabel.text = "НАЗВАНИЕ"
@@ -18,7 +40,7 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
         return nameLabel
     }()
     
-    let nameTextField: UITextField = {
+    var nameTextField: UITextField = {
        let nameTextField = UITextField()
         nameTextField.placeholder = "Бегать по утрам, спать 8 часов и т.п."
         nameTextField.translatesAutoresizingMaskIntoConstraints = false
@@ -36,23 +58,29 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
         return colorLabel
     }()
     
-    let pickerButton: UIButton = {
+    var pickerButton: UIButton = {
         let pickerButton = UIButton()
         pickerButton.layer.backgroundColor = UIColor(red: 1, green: 0.624, blue: 0.31, alpha: 1).cgColor
         pickerButton.layer.cornerRadius = 15
         pickerButton.translatesAutoresizingMaskIntoConstraints = false
+        pickerButton.backgroundColor = .orange
         pickerButton.addTarget(self, action: #selector(picker), for: .touchUpInside)
         return pickerButton
     }()
     
-    @objc func picker() {
+    let pickerVC: UIColorPickerViewController = {
         let picker = UIColorPickerViewController()
-        picker.delegate = self
-        picker.selectedColor = pickerButton.backgroundColor!
-        present(picker, animated: true, completion: nil)
+        return picker
+    }()
+    
+    
+    @objc func picker() {
+        pickerVC.delegate = self
+        pickerVC.selectedColor = pickerButton.backgroundColor!
+        present(pickerVC, animated: true, completion: nil)
     }
     
-    func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
+    func colorPickerViewControllerDidSelectColor(_ viewController: UIColorPickerViewController) {
         pickerButton.backgroundColor = viewController.selectedColor
     }
     
@@ -80,11 +108,52 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
     let timePicker: UIDatePicker = {
         let datePicker = UIDatePicker()
         datePicker.datePickerMode = .time
+//        datePicker.locale = NSLocale(localeIdentifier: "ru_RU") as Locale
         datePicker.preferredDatePickerStyle = .wheels
         datePicker.translatesAutoresizingMaskIntoConstraints = false
         datePicker.addTarget(self, action: #selector(timePickerChoosen), for: .valueChanged)
         return datePicker
     }()
+    
+    let deleteButton: UIButton = {
+       let button = UIButton()
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.setTitleColor(.red, for: .normal)
+        button.setTitle("Удалить привычку", for: .normal)
+        button.addTarget(self, action: #selector(deleteHabit), for: .touchUpInside)
+        return button
+    }()
+    
+    func setupDeleteButton() {
+        view.addSubview(deleteButton)
+        NSLayoutConstraint.activate([
+            deleteButton.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -18),
+            deleteButton.centerXAnchor.constraint(equalTo: view.safeAreaLayoutGuide.centerXAnchor)
+        ])
+    }
+    
+    func dismissViewController (_sender: UIViewController){
+        dismiss(animated: true, completion: nil)
+    }
+    @objc func deleteHabit() {
+        let store = HabitsStore.shared
+        let alertVC = UIAlertController(title: "Удалить привычку", message: "Вы хотите удалить привычку \(habit!.name)?", preferredStyle: .actionSheet)
+        let cancel = UIAlertAction(title: "Отмена", style: .default)
+        let delete = UIAlertAction(title: "Удалить", style: .default, handler: {_ in
+            if let index = store.habits.firstIndex(of: self.habit!) {
+                store.habits.remove(at: index)
+                store.save()
+                self.closeView?.closeView()
+                self.dismiss(animated: true, completion: nil)
+                
+            }
+            
+        })
+        alertVC.addAction(cancel)
+        alertVC.addAction(delete)
+        self.present(alertVC, animated: true, completion: nil)
+    }
+    
     
     @objc func timePickerChoosen(_ sender: UIDatePicker) {
         
@@ -99,13 +168,25 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
     }
     
     @objc func saveHabit() {
+        
+        if habit != nil {
+            habit?.name = nameTextField.text!
+            habit?.date = timePicker.date
+            habit?.color = pickerButton.backgroundColor!
+            dismissHabitVC()
+            view.reloadInputViews()
+        }
+        else {
+        
         let newHabit = Habit(name: nameTextField.text!,
                              date: timePicker.date,
                              color: pickerButton.backgroundColor!)
         let store = HabitsStore.shared
         store.habits.append(newHabit)
+            self.refreshView?.refreshView()
         self.dismiss(animated: true, completion: nil)
-        print(store.habits)
+        
+        }
     }
   
     override func viewDidLoad() {
@@ -120,14 +201,19 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
         view.addSubview(timePickerLabel)
         view.addSubview(timePicker)
         
-        
-        
-        
         navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Отменить", style: .plain, target: self, action: #selector(dismissHabitVC))
         navigationItem.leftBarButtonItem!.tintColor = UIColor(red: 161/255.0, green: 22/255.0, blue: 204/255.0, alpha: 1.0)
         navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Сохранить", style: .plain, target: self, action: #selector(saveHabit))
         navigationItem.rightBarButtonItem!.tintColor = UIColor(red: 161/255.0, green: 22/255.0, blue: 204/255.0, alpha: 1.0)
-        navigationItem.title = "Создать"
+        
+        if habit != nil {
+            navigationItem.title = "Править"
+            setupDeleteButton()
+        }
+        else {
+            navigationItem.title = "Создать"
+        }
+        
         
         NSLayoutConstraint.activate([
             
@@ -157,12 +243,7 @@ class HabitViewController: UIViewController, UIColorPickerViewControllerDelegate
             timePicker.topAnchor.constraint(equalTo: timePickerLabel.bottomAnchor, constant: 15),
             timePicker.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
             timePicker.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor)
-            
-            
-            
-            
         ])
-        
-
     }
 }
+
