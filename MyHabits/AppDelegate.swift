@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         
         habitsNC = UINavigationController(rootViewController: habitsVC)
-        habitsNC.navigationBar.prefersLargeTitles = true
+//        habitsNC.navigationBar.prefersLargeTitles = true
         
         infoNC = UINavigationController(rootViewController: infoVC)
         
